@@ -1,0 +1,46 @@
+name: Random contribution generator
+
+on:
+  schedule:
+    - cron: "0 0 * * *"   # minden nap 00:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  random-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "szajberek"
+          git config user.email "szajberek@users.noreply.github.com"
+
+      - name: Generate random commits
+        run: |
+          mkdir -p contributions
+          FILE="contributions/random.txt"
+
+          COMMITS=$((RANDOM % 5 + 1))  # 1–5 random commit
+
+          for i in $(seq 1 $COMMITS); do
+            DAYS_AGO=$((RANDOM % 365))
+            RANDOM_DATE=$(date -d "$DAYS_AGO days ago" +"%Y-%m-%d %H:%M:%S")
+
+            echo "Random update at $RANDOM_DATE" >> $FILE
+
+            git add $FILE
+            GIT_AUTHOR_DATE="$RANDOM_DATE" \
+            GIT_COMMITTER_DATE="$RANDOM_DATE" \
+            git commit -m "Random contribution ($RANDOM_DATE)"
+          done
+
+      - name: Push changes
+        run: git push
